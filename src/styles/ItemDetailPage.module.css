@@ -1,0 +1,71 @@
+wrapper { max-width: 700px; margin: 0 auto; }
+
+.banner {
+  padding: 44px 20px;
+  text-align: center;
+  font-size: 90px;
+}
+.bannerFound { background: linear-gradient(135deg, #d1fae5, #6ee7b7); }
+.bannerLost  { background: linear-gradient(135deg, #fef3c7, #fcd34d); }
+
+.body { padding: 28px 32px; }
+
+.titleRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+.title { font-weight: 800; font-size: 26px; }
+
+.description {
+  color: var(--text-sub);
+  line-height: 1.7;
+  margin-bottom: 24px;
+}
+
+.infoGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin-bottom: 28px;
+}
+
+.infoTile {
+  background: #f9fafb;
+  border-radius: 10px;
+  padding: 12px 14px;
+}
+.infoLabel { font-size: 12px; color: var(--text-muted); margin-bottom: 2px; }
+.infoVal   { font-weight: 600; }
+
+.contactBox {
+  border-radius: 12px;
+  padding: 18px 20px;
+  margin-bottom: 24px;
+}
+.contactBox.admin   { background: var(--success-bg); }
+.contactBox.hidden  { background: var(--primary-bg); }
+.contactTitle { font-weight: 700; margin-bottom: 8px; }
+.contactName  { font-weight: 600; }
+.contactDetails { margin-top: 6px; font-size: 14px; line-height: 1.7; }
+.contactHidden  { margin-top: 6px; color: var(--text-muted); font-size: 13px; }
+
+.claimsSection { margin-top: 8px; }
+.claimsTitle   { color: var(--primary); font-weight: 700; margin-bottom: 12px; }
+
+.claimCard {
+  border-radius: 12px;
+  padding: 14px 16px;
+  margin-bottom: 10px;
+}
+.claimCard.pending  { background: #f9fafb; }
+.claimCard.approved { background: var(--success-bg); }
+.claimCard.rejected { background: var(--danger-bg); }
+
+.claimName    { font-weight: 700; margin-bottom: 2px; }
+.claimContact { font-size: 13px; color: var(--text-sub); margin-bottom: 6px; }
+.claimDesc    { font-size: 14px; margin-bottom: 10px; }
+

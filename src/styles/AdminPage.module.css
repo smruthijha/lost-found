@@ -1,0 +1,81 @@
+
+.loginWrapper {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: calc(100vh - 64px);
+  padding: 20px;
+}
+
+.loginCard {
+  max-width: 420px;
+  width: 100%;
+  background: var(--bg-card);
+  border-radius: var(--radius-lg);
+  padding: 40px 36px;
+  box-shadow: var(--shadow-md);
+}
+
+.loginIcon  { font-size: 48px; }
+.loginTitle { font-weight: 800; margin-top: 8px; }
+.loginSub   { color: var(--text-muted); margin-top: 4px; font-size: 14px; }
+
+.pageTitle {
+  font-weight: 800;
+  font-size: 22px;
+  color: var(--primary);
+  margin-bottom: 20px;
+}
+
+.tabBar {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 22px;
+}
+
+.emptyState {
+  text-align: center;
+  padding: 60px 0;
+  color: var(--text-muted);
+}
+.emptyIcon  { font-size: 56px; }
+.emptyText  { font-size: 16px; font-weight: 600; margin-top: 12px; }
+
+.claimCard {
+  background: var(--bg-card);
+  border-radius: var(--radius-md);
+  padding: 20px 24px;
+  margin-bottom: 14px;
+  box-shadow: var(--shadow-sm);
+  display: flex;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 14px;
+}
+
+.claimInfo    { flex: 1; }
+.claimHeading { font-weight: 700; font-size: 15px; margin-bottom: 4px; }
+.claimMeta    { font-size: 13px; color: var(--text-sub); margin-bottom: 6px; }
+.claimDesc    { background: #f9fafb; padding: 10px 14px; border-radius: 8px; font-size: 14px; }
+
+.claimActions { display: flex; gap: 8px; align-items: flex-start; flex-shrink: 0; }
+
+.itemRow {
+  background: var(--bg-card);
+  border-radius: var(--radius-md);
+  padding: 18px 22px;
+  margin-bottom: 12px;
+  box-shadow: var(--shadow-sm);
+  display: flex;
+  gap: 16px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.itemEmoji   { font-size: 38px; flex-shrink: 0; }
+.itemInfo    { flex: 1; min-width: 0; }
+.itemTitle   { font-weight: 700; font-size: 15px; }
+.itemMeta    { font-size: 13px; color: var(--text-sub); margin-top: 2px; }
+.itemSubMeta { font-size: 12px; color: var(--text-muted); margin-top: 2px; }
+
+.itemActions { display: flex; gap: 8px; flex-shrink: 0; }
