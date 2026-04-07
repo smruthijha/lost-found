@@ -4,12 +4,14 @@
   "private": true,
   "dependencies": {
     "firebase": "^12.11.0",
+    "firebase-admin": "^13.7.0",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
     "react-router-dom": "^6.30.3",
     "react-scripts": "5.0.1"
   },
   "scripts": {
+    "seed": "node src/firebase/seedAdmin.js",
     "start": "react-scripts start",
     "build": "react-scripts build",
     "test": "react-scripts test",
