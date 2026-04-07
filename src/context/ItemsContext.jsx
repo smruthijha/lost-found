@@ -1,83 +1,107 @@
-import { createContext, useContext, useState } from "react";
-import { SEED_ITEMS } from "../utils/constants";
-import { genId } from "../utils/helpers";
+import { createContext, useContext, useState, useCallback } from "react";
+import {
+  fetchItems   as fbFetchItems,
+  fetchStats   as fbFetchStats,
+  createItem   as fbCreateItem,
+  deleteItem   as fbDeleteItem,
+} from "../firebase/items";
+import {
+  submitClaim         as fbSubmitClaim,
+  reviewClaim         as fbReviewClaim,
+  fetchAllPendingClaims,
+  fetchClaims,
+} from "../firebase/claims";
 
-const ItemsContext = createContext(null);
+// ✅ Cloudinary replaces Firebase Storage — no extra install needed
+import { uploadImage } from "../firebase/storage";
+
+const ItemsCtx = createContext(null);
 
 export function ItemsProvider({ children }) {
-  const [items, setItems] = useState(SEED_ITEMS);
+  const [items,          setItems]          = useState([]);
+  const [stats,          setStats]          = useState({ total:0, found:0, lost:0, resolved:0 });
+  const [pendingClaims,  setPendingClaims]  = useState([]);
+  const [loadingItems,   setLoadingItems]   = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0);
+  const [uploadError,    setUploadError]    = useState(null);
 
-  /** Add a new Lost / Found posting */
-  const addItem = (formData, posterInfo) => {
-    const newItem = {
-      id: genId(),
-      ...formData,
-      postedBy: posterInfo,
-      claims: [],
-      status: "open",
-    };
-    setItems((prev) => [newItem, ...prev]);
-    return newItem;
+  const loadItems = useCallback(async (filters = {}) => {
+    setLoadingItems(true);
+    try {
+      const { items: list } = await fbFetchItems(filters);
+      setItems(list);
+    } finally {
+      setLoadingItems(false);
+    }
+  }, []);
+
+  const loadStats = useCallback(async () => {
+    const s = await fbFetchStats();
+    setStats(s);
+  }, []);
+
+  const loadPending = useCallback(async () => {
+    const p = await fetchAllPendingClaims();
+    setPendingClaims(p);
+  }, []);
+
+  /**
+   * Add a new item.
+   * If imageFile is provided, uploads to Cloudinary first, then saves URL to Firestore.
+   */
+  const addItem = async (formData, imageFile) => {
+    let imageUrl = null;
+    setUploadError(null);
+
+    if (imageFile) {
+      setUploadProgress(1); // show progress bar immediately
+      try {
+        imageUrl = await uploadImage(imageFile, (pct) => setUploadProgress(pct));
+      } catch (err) {
+        setUploadProgress(0);
+        setUploadError(err.message);
+        throw err; // bubble up so PostItemPage can show toast
+      }
+      setUploadProgress(100);
+      // brief pause so user sees 100% before resetting
+      await new Promise((r) => setTimeout(r, 600));
+      setUploadProgress(0);
+    }
+
+    const id = await fbCreateItem({ ...formData, image: imageUrl });
+    await loadItems();
+    await loadStats();
+    return id;
   };
 
-  /** Delete an item (admin only) */
-  const deleteItem = (itemId) =>
-    setItems((prev) => prev.filter((i) => i.id !== itemId));
-
-  /** Submit a claim on an item */
-  const submitClaim = (itemId, claimerInfo, description) => {
-    const claim = {
-      id: genId(),
-      claimedBy: claimerInfo,
-      description,
-      status: "pending",
-      date: new Date().toISOString().split("T")[0],
-    };
-    setItems((prev) =>
-      prev.map((i) =>
-        i.id === itemId ? { ...i, claims: [...i.claims, claim] } : i
-      )
-    );
+  const removeItem = async (id) => {
+    await fbDeleteItem(id);
+    setItems((prev) => prev.filter((i) => i.id !== id));
+    await loadStats();
   };
 
-  /** Admin: approve or reject a claim */
-  const reviewClaim = (itemId, claimId, action) => {
-    setItems((prev) =>
-      prev.map((item) => {
-        if (item.id !== itemId) return item;
-        const updatedClaims = item.claims.map((c) =>
-          c.id === claimId ? { ...c, status: action } : c
-        );
-        return {
-          ...item,
-          claims: updatedClaims,
-          status: action === "approved" ? "resolved" : item.status,
-        };
-      })
-    );
-  };
+  const submitClaim  = async (itemId, data) => fbSubmitClaim(itemId, data);
+  const getClaims    = async (itemId)        => fetchClaims(itemId);
 
-  // ─── Derived helpers ────────────────────────────────────────────
-  const pendingClaims = items.flatMap((item) =>
-    item.claims
-      .filter((c) => c.status === "pending")
-      .map((c) => ({ ...c, item }))
-  );
-
-  const stats = {
-    total: items.length,
-    found: items.filter((i) => i.type === "found").length,
-    lost: items.filter((i) => i.type === "lost").length,
-    resolved: items.filter((i) => i.status === "resolved").length,
+  const reviewClaim = async (itemId, claimId, action) => {
+    await fbReviewClaim(itemId, claimId, action);
+    await loadPending();
+    await loadStats();
+    if (action === "approved") {
+      setItems((prev) => prev.map((i) => i.id === itemId ? { ...i, status:"resolved" } : i));
+    }
   };
 
   return (
-    <ItemsContext.Provider
-      value={{ items, addItem, deleteItem, submitClaim, reviewClaim, pendingClaims, stats }}
-    >
+    <ItemsCtx.Provider value={{
+      items, stats, pendingClaims,
+      loadingItems, uploadProgress, uploadError,
+      loadItems, loadStats, loadPending,
+      addItem, removeItem, submitClaim, getClaims, reviewClaim,
+    }}>
       {children}
-    </ItemsContext.Provider>
+    </ItemsCtx.Provider>
   );
 }
 
-export const useItems = () => useContext(ItemsContext);
+export const useItems = () => useContext(ItemsCtx);

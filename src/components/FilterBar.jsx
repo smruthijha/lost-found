@@ -1,45 +1,31 @@
-import { CATEGORIES } from "../utils/constants";
+const CATS = ["All","Electronics","Accessories","Documents","Clothing","Books","Keys","Bags","Other"];
 
 export function FilterBar({ filter, onChange }) {
+  // ✅ FIX: onChange is called with a new object — no internal state = no focus loss
   return (
-    <div style={{
-      background: "var(--bg-card)",
-      borderRadius: "var(--radius-md)",
-      padding: "16px 20px",
-      boxShadow: "var(--shadow-sm)",
-      display: "flex",
-      gap: 12,
-      flexWrap: "wrap",
-      alignItems: "center",
-    }}>
-      {/* Search */}
+    <div className="card" style={{ padding:"16px 20px", marginBottom:24, display:"flex", gap:12, flexWrap:"wrap", alignItems:"center" }}>
       <input
-        style={{ flex: "1 1 200px", maxWidth: 320 }}
-        placeholder="🔍  Search items…"
+        style={{ flex:"1 1 220px", maxWidth:360 }}
+        placeholder="Search by title or description…"
         value={filter.search}
         onChange={(e) => onChange({ ...filter, search: e.target.value })}
       />
-
-      {/* Type toggle */}
-      <div style={{ display: "flex", gap: 6 }}>
-        {["all", "found", "lost"].map((t) => (
-          <button
-            key={t}
-            className={`btn btn--sm ${filter.type === t ? "btn--primary" : "btn--ghost"}`}
-            onClick={() => onChange({ ...filter, type: t })}
-          >
-            {t.charAt(0).toUpperCase() + t.slice(1)}
+      <div style={{ display:"flex", gap:6 }}>
+        {[
+          { val:"all",   label:"All" },
+          { val:"found", label:"Found" },
+          { val:"lost",  label:"Lost" },
+        ].map(({ val, label }) => (
+          <button key={val} className={`btn btn-sm ${filter.type === val ? "btn-primary" : "btn-ghost"}`}
+            onClick={() => onChange({ ...filter, type: val })}>
+            {label}
           </button>
         ))}
       </div>
-
-      {/* Category */}
-      <select
-        style={{ flex: "0 0 auto", width: "auto" }}
+      <select style={{ flex:"0 0 auto", width:"auto" }}
         value={filter.category}
-        onChange={(e) => onChange({ ...filter, category: e.target.value })}
-      >
-        {CATEGORIES.map((c) => <option key={c}>{c}</option>)}
+        onChange={(e) => onChange({ ...filter, category: e.target.value })}>
+        {CATS.map((c) => <option key={c}>{c}</option>)}
       </select>
     </div>
   );

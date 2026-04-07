@@ -1,35 +1,30 @@
 import { BrowserRouter, Routes, Route } from "react-router-dom";
-import { AuthProvider }   from "./context/AuthContext";
-import { ItemsProvider }  from "./context/ItemsContext";
-import { useToast }       from "./hooks/useToast";
-import Toast        from "./components/Toast";
-import Navbar             from "./components/Navbar";
+import { AuthProvider }  from "./context/AuthContext";
+import { ItemsProvider } from "./context/ItemsContext";
+import { useToast }      from "./hooks/useToast";
+import { Navbar }        from "./components/Navbar";
+import { Toast }         from "./components/Toast";
 import { HomePage }        from "./pages/HomePage";
-import { PostItemPage }   from "./pages/PostItemPage";
-import  { ItemDetailPage }  from "./pages/ItemDetailPage";
-import { AdminLoginPage, AdminPage } from "./pages/AdminPage";
+import { PostItemPage }    from "./pages/PostItemPage";
+import { ItemDetailPage }  from "./pages/ItemDetailPage";
+import { AuthPage }        from "./pages/AuthPage";
+import { AdminPage }       from "./pages/AdminPage";
 import "./styles/global.css";
 
-function AppInner() {
+function AppShell() {
   const { toast, showToast } = useToast();
-
-console.log("HomePage:", HomePage);
-console.log("PostItemPage:", PostItemPage);
-console.log("ItemDetailPage:", ItemDetailPage);
-console.log("AdminLoginPage:", AdminLoginPage);
-console.log("AdminPage:", AdminPage);
-
   return (
     <>
       <Toast toast={toast} />
-      <Navbar onShowToast={showToast} />
+      <Navbar onToast={showToast} />
       <Routes>
-        <Route path="/"             element={<HomePage />} />
-        <Route path="/post"         element={<PostItemPage   onShowToast={showToast} />} />
-        <Route path="/item/:id"     element={<ItemDetailPage onShowToast={showToast} />} />
-        <Route path="/admin/login"  element={<AdminLoginPage onShowToast={showToast} />} />
-        <Route path="/admin"        element={<AdminPage      onShowToast={showToast} />} />
-        <Route path="*"             element={<NotFound />} />
+        <Route path="/"         element={<HomePage />} />
+        <Route path="/post"     element={<PostItemPage   onToast={showToast} />} />
+        <Route path="/item/:id" element={<ItemDetailPage onToast={showToast} />} />
+        <Route path="/login"    element={<AuthPage mode="login"    onToast={showToast} />} />
+        <Route path="/register" element={<AuthPage mode="register" onToast={showToast} />} />
+        <Route path="/admin"    element={<AdminPage      onToast={showToast} />} />
+        <Route path="*"         element={<NotFound />} />
       </Routes>
     </>
   );
@@ -37,25 +32,24 @@ console.log("AdminPage:", AdminPage);
 
 function NotFound() {
   return (
-    <div className="page-wrapper text-center" style={{ paddingTop: 80 }}>
-      <div style={{ fontSize: 72 }}>🚫</div>
-      <h2 style={{ marginTop: 16 }}>404 — Page Not Found</h2>
-      <a href="/" className="btn btn--primary" style={{ marginTop: 20, display: "inline-flex" }}>← Go Home</a>
-    </div>
+    <main style={{ textAlign:"center", padding:"100px 20px" }}>
+      <div style={{ width:96, height:96, borderRadius:28, background:"var(--primary-bg)", display:"flex", alignItems:"center", justifyContent:"center", margin:"0 auto 24px" }}>
+        <svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="var(--primary)" strokeWidth="1.5"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+      </div>
+      <h1 style={{ fontSize:56, fontWeight:900, color:"var(--primary)", lineHeight:1 }}>404</h1>
+      <h2 style={{ marginTop:8, fontWeight:700 }}>Page not found</h2>
+      <p style={{ color:"var(--text-muted)", marginTop:8 }}>The page you're looking for doesn't exist.</p>
+      <a href="/" className="btn btn-primary" style={{ marginTop:28, display:"inline-flex" }}>Back to Home</a>
+    </main>
   );
 }
 
 export default function App() {
   return (
-    <BrowserRouter
-      future={{
-        v7_startTransition: true,
-        v7_relativeSplatPath: true,
-      }}
-    >
+    <BrowserRouter>
       <AuthProvider>
         <ItemsProvider>
-          <AppInner />
+          <AppShell />
         </ItemsProvider>
       </AuthProvider>
     </BrowserRouter>
