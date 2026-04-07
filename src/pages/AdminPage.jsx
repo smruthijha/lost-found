@@ -4,7 +4,7 @@ import { useItems as useItemsAdmin } from "../context/ItemsContext";
 import { useAuth  as useAuthAdmin  } from "../context/AuthContext";
 
 export function AdminPage({ onToast }) {
-  const { items, pendingClaims, stats, loadItems, loadPending, loadStats, reviewClaim, removeItem } = useItemsAdmin();
+  const { items, pendingClaims, loadItems, loadPending, loadStats, reviewClaim, removeItem } = useItemsAdmin();
   const { isAdmin } = useAuthAdmin();
   const navigate    = useNavAdmin();
   const [tab,       setTab]       = useStatAdmin("pending");
