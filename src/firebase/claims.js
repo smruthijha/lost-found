@@ -75,15 +75,15 @@ export const fetchAllPendingClaims = async () => {
   return pending;
 };
 
-/** Get approved claim for an item (to show contact info to owner) */
+/**
+ * Get the approved claim for an item.
+ * Fetches ALL claims and filters client-side to avoid
+ * needing a Firestore composite index on the subcollection.
+ */
 export const fetchApprovedClaim = async (itemId) => {
-  const snap = await getDocs(
-    query(
-      collection(db, "items", itemId, "claims"),
-      where("status", "==", "approved")
-    )
-  );
-  if (snap.empty) return null;
-  const d = snap.docs[0];
-  return { id: d.id, ...d.data() };
+  const snap = await getDocs(collection(db, "items", itemId, "claims"));
+  const approved = snap.docs
+    .map((d) => ({ id: d.id, ...d.data() }))
+    .find((c) => c.status === "approved");
+  return approved || null;
 };
