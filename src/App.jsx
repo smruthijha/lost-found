@@ -4,11 +4,11 @@ import { ItemsProvider } from "./context/ItemsContext";
 import { useToast }      from "./hooks/useToast";
 import { Navbar }        from "./components/Navbar";
 import { Toast }         from "./components/Toast";
-import { HomePage }        from "./pages/HomePage";
-import { PostItemPage }    from "./pages/PostItemPage";
-import { ItemDetailPage }  from "./pages/ItemDetailPage";
-import { AuthPage }        from "./pages/AuthPage";
-import { AdminPage }       from "./pages/AdminPage";
+import { HomePage }       from "./pages/HomePage";
+import { PostItemPage }   from "./pages/PostItemPage";
+import { ItemDetailPage } from "./pages/ItemDetailPage";
+import { AuthPage }       from "./pages/AuthPage";
+import { AdminPage }      from "./pages/AdminPage";
 import "./styles/global.css";
 
 function AppShell() {
@@ -32,21 +32,39 @@ function AppShell() {
 
 function NotFound() {
   return (
-    <main style={{ textAlign:"center", padding:"100px 20px" }}>
-      <div style={{ width:96, height:96, borderRadius:28, background:"var(--primary-bg)", display:"flex", alignItems:"center", justifyContent:"center", margin:"0 auto 24px" }}>
-        <svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="var(--primary)" strokeWidth="1.5"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+    <main style={{ textAlign: "center", padding: "100px 20px" }}>
+      <div style={{
+        width: 96, height: 96, borderRadius: 28,
+        background: "var(--primary-bg)",
+        display: "flex", alignItems: "center", justifyContent: "center",
+        margin: "0 auto 24px",
+      }}>
+        <svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="var(--primary)" strokeWidth="1.5">
+          <circle cx="11" cy="11" r="8"/>
+          <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+        </svg>
       </div>
-      <h1 style={{ fontSize:56, fontWeight:900, color:"var(--primary)", lineHeight:1 }}>404</h1>
-      <h2 style={{ marginTop:8, fontWeight:700 }}>Page not found</h2>
-      <p style={{ color:"var(--text-muted)", marginTop:8 }}>The page you're looking for doesn't exist.</p>
-      <a href="/" className="btn btn-primary" style={{ marginTop:28, display:"inline-flex" }}>Back to Home</a>
+      <h1 style={{ fontSize: 56, fontWeight: 900, color: "var(--primary)", lineHeight: 1 }}>404</h1>
+      <h2 style={{ marginTop: 8, fontWeight: 700 }}>Page not found</h2>
+      <p style={{ color: "var(--text-muted)", marginTop: 8 }}>
+        The page you're looking for doesn't exist.
+      </p>
+      <a href="/" className="btn btn-primary" style={{ marginTop: 28, display: "inline-flex" }}>
+        Back to Home
+      </a>
     </main>
   );
 }
 
 export default function App() {
   return (
-    <BrowserRouter>
+    // ✅ Both future flags added to silence React Router v6 → v7 warnings
+    <BrowserRouter
+      future={{
+        v7_startTransition:       true,
+        v7_relativeSplatPath:     true,
+      }}
+    >
       <AuthProvider>
         <ItemsProvider>
           <AppShell />
