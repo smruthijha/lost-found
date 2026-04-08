@@ -1,6 +1,12 @@
 import {
-  collection, addDoc, getDocs, doc, updateDoc,
-  serverTimestamp, query, where, getDoc,
+  collection,
+  addDoc,
+  getDocs,
+  doc,
+  updateDoc,
+  serverTimestamp,
+  query,
+  where,
 } from "firebase/firestore";
 import { db } from "./config";
 import { updateItemStatus } from "./items";
@@ -30,6 +36,7 @@ export const reviewClaim = async (itemId, claimId, action) => {
     status: action,
     reviewedAt: serverTimestamp(),
   });
+
   if (action === "approved") {
     // item moves to "claim_approved" — not "resolved" yet
     await updateItemStatus(itemId, "claim_approved");
@@ -38,20 +45,21 @@ export const reviewClaim = async (itemId, claimId, action) => {
 
 /**
  * Owner marks item as collected → status becomes "resolved"
- * Also stamps resolvedAt on the claim
+ * Also stamps collectedAt on the claim
  */
 export const markItemCollected = async (itemId, claimId) => {
   await updateDoc(doc(db, "items", itemId, "claims", claimId), {
     collected: true,
     collectedAt: serverTimestamp(),
   });
+
   await updateItemStatus(itemId, "resolved");
 };
 
 /** Get ALL pending claims across all items (admin dashboard) */
 export const fetchAllPendingClaims = async () => {
   const itemsSnap = await getDocs(collection(db, "items"));
-  const pending   = [];
+  const pending = [];
 
   await Promise.all(
     itemsSnap.docs.map(async (itemDoc) => {
@@ -61,11 +69,12 @@ export const fetchAllPendingClaims = async () => {
           where("status", "==", "pending")
         )
       );
+
       claimsSnap.docs.forEach((c) => {
         pending.push({
-          id:     c.id,
+          id: c.id,
           itemId: itemDoc.id,
-          item:   { id: itemDoc.id, ...itemDoc.data() },
+          item: { id: itemDoc.id, ...itemDoc.data() },
           ...c.data(),
         });
       });
@@ -82,8 +91,10 @@ export const fetchAllPendingClaims = async () => {
  */
 export const fetchApprovedClaim = async (itemId) => {
   const snap = await getDocs(collection(db, "items", itemId, "claims"));
+
   const approved = snap.docs
     .map((d) => ({ id: d.id, ...d.data() }))
     .find((c) => c.status === "approved");
+
   return approved || null;
 };
