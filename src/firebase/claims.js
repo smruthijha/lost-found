@@ -1,6 +1,6 @@
 import {
   collection, addDoc, getDocs, doc, updateDoc,
-  serverTimestamp, query, where,
+  serverTimestamp, query, where, getDoc,
 } from "firebase/firestore";
 import { db } from "./config";
 import { updateItemStatus } from "./items";
@@ -14,16 +14,38 @@ export const submitClaim = async (itemId, claimData) => {
   });
 };
 
-/** Get all claims for an item (admin) */
+/** Get all claims for an item */
 export const fetchClaims = async (itemId) => {
   const snap = await getDocs(collection(db, "items", itemId, "claims"));
   return snap.docs.map((d) => ({ id: d.id, ...d.data() }));
 };
 
-/** Admin: approve or reject a claim */
+/**
+ * Admin: approve or reject a claim.
+ * On approve → item status becomes "claim_approved" (NOT resolved yet).
+ * Resolved only happens when owner confirms collection.
+ */
 export const reviewClaim = async (itemId, claimId, action) => {
-  await updateDoc(doc(db, "items", itemId, "claims", claimId), { status: action });
-  if (action === "approved") await updateItemStatus(itemId, "resolved");
+  await updateDoc(doc(db, "items", itemId, "claims", claimId), {
+    status: action,
+    reviewedAt: serverTimestamp(),
+  });
+  if (action === "approved") {
+    // item moves to "claim_approved" — not "resolved" yet
+    await updateItemStatus(itemId, "claim_approved");
+  }
+};
+
+/**
+ * Owner marks item as collected → status becomes "resolved"
+ * Also stamps resolvedAt on the claim
+ */
+export const markItemCollected = async (itemId, claimId) => {
+  await updateDoc(doc(db, "items", itemId, "claims", claimId), {
+    collected: true,
+    collectedAt: serverTimestamp(),
+  });
+  await updateItemStatus(itemId, "resolved");
 };
 
 /** Get ALL pending claims across all items (admin dashboard) */
@@ -34,7 +56,10 @@ export const fetchAllPendingClaims = async () => {
   await Promise.all(
     itemsSnap.docs.map(async (itemDoc) => {
       const claimsSnap = await getDocs(
-        query(collection(db, "items", itemDoc.id, "claims"), where("status", "==", "pending"))
+        query(
+          collection(db, "items", itemDoc.id, "claims"),
+          where("status", "==", "pending")
+        )
       );
       claimsSnap.docs.forEach((c) => {
         pending.push({
@@ -48,4 +73,17 @@ export const fetchAllPendingClaims = async () => {
   );
 
   return pending;
+};
+
+/** Get approved claim for an item (to show contact info to owner) */
+export const fetchApprovedClaim = async (itemId) => {
+  const snap = await getDocs(
+    query(
+      collection(db, "items", itemId, "claims"),
+      where("status", "==", "approved")
+    )
+  );
+  if (snap.empty) return null;
+  const d = snap.docs[0];
+  return { id: d.id, ...d.data() };
 };

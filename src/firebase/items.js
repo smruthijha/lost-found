@@ -1,26 +1,45 @@
 import {
   collection, addDoc, getDocs, getDoc, doc,
   deleteDoc, updateDoc, query, where, orderBy,
-  serverTimestamp, limit, startAfter,
+  serverTimestamp, limit,
 } from "firebase/firestore";
 import { db } from "./config";
 
 const ITEMS = "items";
 
-/** Fetch items with optional filters */
-export const fetchItems = async ({ type, category, status, pageSize = 12, lastDoc = null } = {}) => {
-  let q = query(collection(db, ITEMS), orderBy("createdAt", "desc"));
+/**
+ * Item status flow:
+ *   "open"           → item posted, awaiting claims
+ *   "claim_approved" → admin approved a claim, owner notified, awaiting collection
+ *   "resolved"       → owner confirmed item collected
+ */
 
-  if (type     && type !== "all")  q = query(q, where("type",     "==", type));
-  if (category && category !== "All") q = query(q, where("category", "==", category));
-  if (status)                      q = query(q, where("status",   "==", status));
-  q = query(q, limit(pageSize));
-  if (lastDoc) q = query(q, startAfter(lastDoc));
+/** Fetch items with optional filters — hide "resolved" from public by default */
+export const fetchItems = async ({ type, category, status, pageSize = 20 } = {}) => {
+  let constraints = [orderBy("createdAt", "desc"), limit(pageSize)];
 
+  if (type     && type !== "all")  constraints.push(where("type",     "==", type));
+  if (category && category !== "All") constraints.push(where("category", "==", category));
+
+  // Only show resolved items if explicitly requested (admin view)
+  if (status) {
+    constraints.push(where("status", "==", status));
+  } else {
+    // Public view: only show open + claim_approved items
+    constraints.push(where("status", "in", ["open", "claim_approved"]));
+  }
+
+  const q    = query(collection(db, ITEMS), ...constraints);
   const snap = await getDocs(q);
-  const items = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
-  const lastVisible = snap.docs[snap.docs.length - 1] || null;
-  return { items, lastVisible };
+  return { items: snap.docs.map((d) => ({ id: d.id, ...d.data() })) };
+};
+
+/** Fetch ALL items including resolved — for admin dashboard */
+export const fetchAllItems = async () => {
+  const snap = await getDocs(
+    query(collection(db, ITEMS), orderBy("createdAt", "desc"))
+  );
+  return snap.docs.map((d) => ({ id: d.id, ...d.data() }));
 };
 
 /** Get single item */
@@ -40,21 +59,22 @@ export const createItem = async (data) => {
   return ref.id;
 };
 
-/** Delete item (admin) */
+/** Delete item */
 export const deleteItem = async (id) => deleteDoc(doc(db, ITEMS, id));
 
 /** Update item status */
 export const updateItemStatus = async (id, status) =>
-  updateDoc(doc(db, ITEMS, id), { status });
+  updateDoc(doc(db, ITEMS, id), { status, updatedAt: serverTimestamp() });
 
-/** Get stats */
+/** Get stats — counts all statuses */
 export const fetchStats = async () => {
   const snap = await getDocs(collection(db, ITEMS));
   const all  = snap.docs.map((d) => d.data());
   return {
-    total:    all.length,
-    found:    all.filter((i) => i.type === "found").length,
-    lost:     all.filter((i) => i.type === "lost").length,
-    resolved: all.filter((i) => i.status === "resolved").length,
+    total:          all.length,
+    found:          all.filter((i) => i.type === "found").length,
+    lost:           all.filter((i) => i.type === "lost").length,
+    claim_approved: all.filter((i) => i.status === "claim_approved").length,
+    resolved:       all.filter((i) => i.status === "resolved").length,
   };
 };
