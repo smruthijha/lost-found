@@ -10,6 +10,7 @@ import { PostItemPage }   from "./pages/PostItemPage";
 import { ItemDetailPage } from "./pages/ItemDetailPage";
 import { AuthPage }       from "./pages/AuthPage";
 import { AdminPage }      from "./pages/AdminPage";
+import { ProfilePage }    from "./pages/ProfilePage";
 import "./styles/global.css";
 import { patchMissingStatus } from "./firebase/patchItems"; // ← remove after first deploy
 
@@ -32,6 +33,7 @@ function AppShell() {
         <Route path="/login"    element={<AuthPage mode="login"    onToast={showToast} />} />
         <Route path="/register" element={<AuthPage mode="register" onToast={showToast} />} />
         <Route path="/admin"    element={<AdminPage      onToast={showToast} />} />
+        <Route path="/profile"  element={<ProfilePage    onToast={showToast} />} />
         <Route path="*"         element={<NotFound />} />
       </Routes>
     </>

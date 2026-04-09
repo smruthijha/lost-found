@@ -58,10 +58,12 @@ export function Navbar({ onToast }) {
           {user ? (
             <>
               <div style={{ background:"rgba(255,255,255,0.15)", borderRadius:9, padding:"7px 13px", fontSize:13, fontWeight:600, color:"#fff", display:"flex", alignItems:"center", gap:8 }}>
-                <div style={{ width:26, height:26, borderRadius:"50%", background:"rgba(255,255,255,0.25)", display:"flex", alignItems:"center", justifyContent:"center" }}>
-                  <UserIcon />
-                </div>
-                <span className="hide-sm">{user.name}</span>
+                <Link to="/profile" style={{ display:"flex", alignItems:"center", gap:8, color:"#fff", textDecoration:"none" }}>
+                  <div style={{ width:26, height:26, borderRadius:"50%", background:"rgba(255,255,255,0.25)", display:"flex", alignItems:"center", justifyContent:"center" }}>
+                    <UserIcon />
+                  </div>
+                  <span className="hide-sm">{user.name}</span>
+                </Link>
                 {isAdmin && <span className="badge badge-admin" style={{ fontSize:10 }}>Admin</span>}
               </div>
               <button className="btn btn-ghost btn-sm" onClick={handleLogout} style={{ color:"rgba(255,255,255,0.85)", borderColor:"rgba(255,255,255,0.3)", display:"flex", alignItems:"center", gap:6 }}>

@@ -5,11 +5,7 @@ import {
 import { db } from "./config";
 import { updateItemStatus } from "./items";
 
-/* ─────────────────────────────────────────────────────────────────────────
-   SUBMIT CLAIM
-   Anyone (logged-in or not) can submit a claim.
-   We store their contact info here — it stays hidden until admin approves.
-───────────────────────────────────────────────────────────────────────── */
+/* ─── Submit a new claim ─────────────────────────────────────────────────── */
 export const submitClaim = async (itemId, { name, email, phone, description }) => {
   try {
     await addDoc(collection(db, "items", itemId, "claims"), {
@@ -19,69 +15,62 @@ export const submitClaim = async (itemId, { name, email, phone, description }) =
       createdAt: serverTimestamp(),
     });
   } catch (e) {
-    console.error("submitClaim:", e);
+    console.error("submitClaim error:", e);
     throw e;
   }
 };
 
-/* ─────────────────────────────────────────────────────────────────────────
-   FETCH ALL CLAIMS FOR AN ITEM  (admin use)
-───────────────────────────────────────────────────────────────────────── */
+/* ─── Fetch ALL claims for one item ──────────────────────────────────────── */
 export const fetchClaims = async (itemId) => {
   try {
     const snap = await getDocs(collection(db, "items", itemId, "claims"));
-    return snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+    const claims = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+    console.log(`fetchClaims(${itemId}) →`, claims); // debug
+    return claims;
   } catch (e) {
-    console.error("fetchClaims:", e);
+    console.error("fetchClaims error:", e);
     return [];
   }
 };
 
-/* ─────────────────────────────────────────────────────────────────────────
-   FETCH THE APPROVED CLAIM  (used to show contact info to both parties)
-   Returns the single approved claim doc, or null.
-───────────────────────────────────────────────────────────────────────── */
+/* ─── Fetch the single APPROVED claim ────────────────────────────────────── */
 export const fetchApprovedClaim = async (itemId) => {
   try {
     const snap = await getDocs(collection(db, "items", itemId, "claims"));
     const all  = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
-    return all.find((c) => c.status === "approved") ?? null;
+    console.log(`fetchApprovedClaim(${itemId}) all claims:`, all); // debug
+
+    const approved = all.find((c) => c.status === "approved");
+    console.log(`fetchApprovedClaim(${itemId}) found approved:`, approved); // debug
+    return approved || null;
   } catch (e) {
-    console.error("fetchApprovedClaim:", e);
+    console.error("fetchApprovedClaim error:", e);
     return null;
   }
 };
 
-/* ─────────────────────────────────────────────────────────────────────────
-   ADMIN: APPROVE OR REJECT A CLAIM
-   approve → item status becomes "claim_approved"
-             both poster & claimer can now see each other's contact info
-   reject  → item stays "open", others can still claim
-───────────────────────────────────────────────────────────────────────── */
+/* ─── Admin: approve or reject ───────────────────────────────────────────── */
 export const reviewClaim = async (itemId, claimId, action) => {
   try {
+    // 1. Update the claim status
     await updateDoc(doc(db, "items", itemId, "claims", claimId), {
-      status:     action,   // "approved" | "rejected"
+      status:     action,
       reviewedAt: serverTimestamp(),
     });
+    console.log(`reviewClaim: item=${itemId} claim=${claimId} action=${action}`);
+
+    // 2. Update item status if approved
     if (action === "approved") {
       await updateItemStatus(itemId, "claim_approved");
+      console.log(`reviewClaim: item ${itemId} status → claim_approved`);
     }
   } catch (e) {
-    console.error("reviewClaim:", e);
+    console.error("reviewClaim error:", e);
     throw e;
   }
 };
 
-/* ─────────────────────────────────────────────────────────────────────────
-   MARK ITEM COLLECTED
-   Called by the OWNER (poster on a "lost" item, or claimer on a "found" item)
-   after physically receiving the item.
-   → claim gets collected:true
-   → item status becomes "resolved"
-   → item disappears from public dashboard
-   → only admin can see it
-───────────────────────────────────────────────────────────────────────── */
+/* ─── Owner marks item collected → fully resolved ────────────────────────── */
 export const markItemCollected = async (itemId, claimId) => {
   try {
     await updateDoc(doc(db, "items", itemId, "claims", claimId), {
@@ -89,15 +78,14 @@ export const markItemCollected = async (itemId, claimId) => {
       collectedAt: serverTimestamp(),
     });
     await updateItemStatus(itemId, "resolved");
+    console.log(`markItemCollected: item ${itemId} → resolved`);
   } catch (e) {
-    console.error("markItemCollected:", e);
+    console.error("markItemCollected error:", e);
     throw e;
   }
 };
 
-/* ─────────────────────────────────────────────────────────────────────────
-   FETCH ALL PENDING CLAIMS  (admin dashboard)
-───────────────────────────────────────────────────────────────────────── */
+/* ─── Admin dashboard: all pending claims across all items ───────────────── */
 export const fetchAllPendingClaims = async () => {
   try {
     const itemsSnap = await getDocs(collection(db, "items"));
@@ -119,13 +107,13 @@ export const fetchAllPendingClaims = async () => {
               });
             }
           });
-        } catch { /* skip items whose claims can't be read */ }
+        } catch { /* skip */ }
       })
     );
 
     return pending;
   } catch (e) {
-    console.error("fetchAllPendingClaims:", e);
+    console.error("fetchAllPendingClaims error:", e);
     return [];
   }
 };

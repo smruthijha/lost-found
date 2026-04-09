@@ -1,5 +1,6 @@
 import { createContext, useContext, useState, useEffect } from "react";
-import { registerUser, loginUser, logoutUser, getUserProfile, onAuthChange } from "../firebase/auth";
+import { registerUser, loginUser, logoutUser, getUserProfile, onAuthChange, updateUserProfile, changeUserPassword } from "../firebase/auth";
+import { auth } from "../firebase/config";
 
 const AuthCtx = createContext(null);
 
@@ -41,8 +42,20 @@ export function AuthProvider({ children }) {
     setUser(null);
   };
 
+  const updateProfile = async ({ name, phone }) => {
+    const uid = auth.currentUser?.uid;
+    if (!uid) throw new Error("Not logged in.");
+    await updateUserProfile(uid, { name, phone });
+    setUser((prev) => ({ ...prev, name, phone }));
+    return { name, phone };
+  };
+
+  const changePassword = async (currentPassword, newPassword) => {
+    await changeUserPassword(currentPassword, newPassword);
+  };
+
   return (
-    <AuthCtx.Provider value={{ user, isAdmin: user?.role === "admin", loading, login, register, logout }}>
+    <AuthCtx.Provider value={{ user, isAdmin: user?.role === "admin", loading, login, register, logout, updateProfile, changePassword }}>
       {!loading && children}
     </AuthCtx.Provider>
   );
