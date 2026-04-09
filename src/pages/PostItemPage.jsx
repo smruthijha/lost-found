@@ -3,7 +3,8 @@ import { useNavigate } from 'react-router-dom'
 import { io } from 'socket.io-client'
 import { useAuth } from "../../context/AuthContext";
 import WorkerLayout from '../../components/worker/WorkerLayout'
-import { getMyRequestsAPI, updateStatusAPI, getMessagesAPI, sendMessageAPI } from '../../lib/api'
+import { fetchClaims, reviewClaim } from "../firebase/claims";
+import { fetchItem } from "../firebase/items";
 
 const STEPS = ['Accepted', 'On the way', 'In progress', 'Completed']
 const STATUS_MAP = ['ACCEPTED', 'ACCEPTED', 'IN_PROGRESS', 'COMPLETED']
