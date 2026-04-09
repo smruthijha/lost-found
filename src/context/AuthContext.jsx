@@ -1,6 +1,14 @@
 import { createContext, useContext, useState, useEffect } from "react";
-import { registerUser, loginUser, logoutUser, getUserProfile, onAuthChange, updateUserProfile, changeUserPassword } from "../firebase/auth";
 import { auth } from "../firebase/config";
+import {
+  registerUser,
+  loginUser,
+  logoutUser,
+  getUserProfile,
+  onAuthChange,
+  updateUserProfile,
+  changeUserPassword,
+} from "../firebase/auth";
 
 const AuthCtx = createContext(null);
 
@@ -8,6 +16,7 @@ export function AuthProvider({ children }) {
   const [user,    setUser]    = useState(null);
   const [loading, setLoading] = useState(true);
 
+  // Restore session on mount
   useEffect(() => {
     const unsub = onAuthChange(async (firebaseUser) => {
       if (firebaseUser) {
@@ -47,7 +56,6 @@ export function AuthProvider({ children }) {
     if (!uid) throw new Error("Not logged in.");
     await updateUserProfile(uid, { name, phone });
     setUser((prev) => ({ ...prev, name, phone }));
-    return { name, phone };
   };
 
   const changePassword = async (currentPassword, newPassword) => {
@@ -55,7 +63,16 @@ export function AuthProvider({ children }) {
   };
 
   return (
-    <AuthCtx.Provider value={{ user, isAdmin: user?.role === "admin", loading, login, register, logout, updateProfile, changePassword }}>
+    <AuthCtx.Provider value={{
+      user,
+      isAdmin: user?.role === "admin",
+      loading,
+      login,
+      register,
+      logout,
+      updateProfile,
+      changePassword,
+    }}>
       {!loading && children}
     </AuthCtx.Provider>
   );
