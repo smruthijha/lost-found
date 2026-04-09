@@ -1,96 +1,52 @@
 import {
-  collection,
-  addDoc,
-  getDocs,
-  getDoc,
-  doc,
-  deleteDoc,
-  updateDoc,
-  orderBy,
-  query,
-  serverTimestamp,
+  collection, addDoc, getDocs, getDoc,
+  doc, deleteDoc, updateDoc, serverTimestamp,
 } from "firebase/firestore";
 import { db } from "./config";
 
-const ITEMS = "items";
+const COL = "items";
 
-/**
- * Status flow:
- *  "open"           → posted, awaiting claims
- *  "claim_approved" → admin approved a claim
- *  "resolved"       → owner collected item
- */
+/* ── helpers ─────────────────────────────────────────────────────────────── */
+const toMs = (ts) => ts?.seconds ? ts.seconds * 1000 : (ts ?? 0);
+const newestFirst = (a, b) => toMs(b.createdAt) - toMs(a.createdAt);
 
-/**
- * Public feed — now using query + orderBy
- */
-export const fetchItems = async ({ type, category } = {}) => {
+/* ── public feed (open + claim_approved only) ────────────────────────────── */
+export const fetchItems = async () => {
   try {
-    let q = query(
-      collection(db, ITEMS),
-      orderBy("createdAt", "desc") // ✅ using orderBy
-    );
-
-    const snap = await getDocs(q);
-
-    let results = snap.docs.map((d) => ({
-      id: d.id,
-      ...d.data(),
-    }));
-
-    // Hide resolved items
-    results = results.filter(
-      (i) => i.status === "open" || i.status === "claim_approved"
-    );
-
-    // Optional filters (client-side to avoid index issues)
-    if (type && type !== "all") {
-      results = results.filter((i) => i.type === type);
-    }
-
-    if (category && category !== "All") {
-      results = results.filter((i) => i.category === category);
-    }
-
-    return { items: results };
-  } catch (err) {
-    console.error("fetchItems error:", err);
-    return { items: [] };
-  }
-};
-
-/**
- * Admin feed — all items sorted from Firestore
- */
-export const fetchAllItems = async () => {
-  try {
-    const q = query(
-      collection(db, ITEMS),
-      orderBy("createdAt", "desc") // ✅ used here too
-    );
-
-    const snap = await getDocs(q);
-
-    return snap.docs.map((d) => ({
-      id: d.id,
-      ...d.data(),
-    }));
-  } catch (err) {
-    console.error("fetchAllItems error:", err);
+    const snap = await getDocs(collection(db, COL));
+    return snap.docs
+      .map((d) => ({ id: d.id, ...d.data() }))
+      .filter((i) => i.status === "open" || i.status === "claim_approved")
+      .sort(newestFirst);
+  } catch (e) {
+    console.error("fetchItems:", e);
     return [];
   }
 };
 
-/** Get a single item */
+/* ── admin feed (all statuses) ───────────────────────────────────────────── */
+export const fetchAllItems = async () => {
+  try {
+    const snap = await getDocs(collection(db, COL));
+    return snap.docs
+      .map((d) => ({ id: d.id, ...d.data() }))
+      .sort(newestFirst);
+  } catch (e) {
+    console.error("fetchAllItems:", e);
+    return [];
+  }
+};
+
+/* ── single item ─────────────────────────────────────────────────────────── */
 export const fetchItem = async (id) => {
-  const snap = await getDoc(doc(db, ITEMS, id));
+  const snap = await getDoc(doc(db, COL, id));
   if (!snap.exists()) throw new Error("Item not found.");
   return { id: snap.id, ...snap.data() };
 };
 
-/** Create item */
+/* ── create ──────────────────────────────────────────────────────────────── */
 export const createItem = async (data) => {
-  const ref = await addDoc(collection(db, ITEMS), {
+  const ref = await addDoc(collection(db, COL), {
     ...data,
     status: "open",
     createdAt: serverTimestamp(),
@@ -99,40 +55,27 @@ export const createItem = async (data) => {
   return ref.id;
 };
 
-/** Delete item */
-export const deleteItem = async (id) =>
-  deleteDoc(doc(db, ITEMS, id));
+/* ── delete ──────────────────────────────────────────────────────────────── */
+export const deleteItem = async (id) => deleteDoc(doc(db, COL, id));
 
-/** Update status */
+/* ── update status ───────────────────────────────────────────────────────── */
 export const updateItemStatus = async (id, status) =>
-  updateDoc(doc(db, ITEMS, id), {
-    status,
-    updatedAt: serverTimestamp(),
-  });
+  updateDoc(doc(db, COL, id), { status, updatedAt: serverTimestamp() });
 
-/**
- * Stats (kept simple — no query needed)
- */
+/* ── stats ───────────────────────────────────────────────────────────────── */
 export const fetchStats = async () => {
   try {
-    const snap = await getDocs(collection(db, ITEMS));
-    const all = snap.docs.map((d) => d.data());
-
+    const snap = await getDocs(collection(db, COL));
+    const all  = snap.docs.map((d) => d.data());
     return {
-      total: all.length,
-      found: all.filter((i) => i.type === "found").length,
-      lost: all.filter((i) => i.type === "lost").length,
+      total:          all.length,
+      found:          all.filter((i) => i.type === "found").length,
+      lost:           all.filter((i) => i.type === "lost").length,
       claim_approved: all.filter((i) => i.status === "claim_approved").length,
-      resolved: all.filter((i) => i.status === "resolved").length,
+      resolved:       all.filter((i) => i.status === "resolved").length,
     };
-  } catch (err) {
-    console.error("fetchStats error:", err);
-    return {
-      total: 0,
-      found: 0,
-      lost: 0,
-      claim_approved: 0,
-      resolved: 0,
-    };
+  } catch (e) {
+    console.error("fetchStats:", e);
+    return { total: 0, found: 0, lost: 0, claim_approved: 0, resolved: 0 };
   }
 };

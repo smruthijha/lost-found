@@ -133,9 +133,8 @@ export function ItemsProvider({ children }) {
 
   const markCollected = async (itemId, claimId) => {
     await fbMarkCollected(itemId, claimId);
-    setItems((prev) =>
-      prev.map((i) => i.id === itemId ? { ...i, status: "resolved" } : i)
-    );
+    // Remove from local state immediately — it's now resolved/hidden from public
+    setItems((prev) => prev.filter((i) => i.id !== itemId));
     await loadStats();
   };
 

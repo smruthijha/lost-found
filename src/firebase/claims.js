@@ -1,73 +1,87 @@
 import {
-  collection, addDoc, getDocs, doc, updateDoc,
-  serverTimestamp,
+  collection, addDoc, getDocs,
+  doc, updateDoc, serverTimestamp,
 } from "firebase/firestore";
 import { db } from "./config";
 import { updateItemStatus } from "./items";
 
-/** Submit a claim on an item (no auth required) */
-export const submitClaim = async (itemId, claimData) => {
+/* ─────────────────────────────────────────────────────────────────────────
+   SUBMIT CLAIM
+   Anyone (logged-in or not) can submit a claim.
+   We store their contact info here — it stays hidden until admin approves.
+───────────────────────────────────────────────────────────────────────── */
+export const submitClaim = async (itemId, { name, email, phone, description }) => {
   try {
     await addDoc(collection(db, "items", itemId, "claims"), {
-      ...claimData,
-      status: "pending",
+      name, email, phone, description,
+      status:    "pending",
       collected: false,
       createdAt: serverTimestamp(),
     });
-  } catch (err) {
-    console.error("submitClaim error:", err);
-    throw err;
+  } catch (e) {
+    console.error("submitClaim:", e);
+    throw e;
   }
 };
 
-/** Fetch ALL claims for one item */
+/* ─────────────────────────────────────────────────────────────────────────
+   FETCH ALL CLAIMS FOR AN ITEM  (admin use)
+───────────────────────────────────────────────────────────────────────── */
 export const fetchClaims = async (itemId) => {
   try {
     const snap = await getDocs(collection(db, "items", itemId, "claims"));
     return snap.docs.map((d) => ({ id: d.id, ...d.data() }));
-  } catch (err) {
-    console.error("fetchClaims error:", err);
+  } catch (e) {
+    console.error("fetchClaims:", e);
     return [];
   }
 };
 
-/**
- * Fetch the approved claim for an item.
- * Client-side filter avoids needing a Firestore composite index.
- */
+/* ─────────────────────────────────────────────────────────────────────────
+   FETCH THE APPROVED CLAIM  (used to show contact info to both parties)
+   Returns the single approved claim doc, or null.
+───────────────────────────────────────────────────────────────────────── */
 export const fetchApprovedClaim = async (itemId) => {
   try {
     const snap = await getDocs(collection(db, "items", itemId, "claims"));
     const all  = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
-    return all.find((c) => c.status === "approved") || null;
-  } catch (err) {
-    console.error("fetchApprovedClaim error:", err);
+    return all.find((c) => c.status === "approved") ?? null;
+  } catch (e) {
+    console.error("fetchApprovedClaim:", e);
     return null;
   }
 };
 
-/**
- * Admin: approve or reject a claim.
- * On approve → item status becomes "claim_approved" (not resolved yet).
- */
+/* ─────────────────────────────────────────────────────────────────────────
+   ADMIN: APPROVE OR REJECT A CLAIM
+   approve → item status becomes "claim_approved"
+             both poster & claimer can now see each other's contact info
+   reject  → item stays "open", others can still claim
+───────────────────────────────────────────────────────────────────────── */
 export const reviewClaim = async (itemId, claimId, action) => {
   try {
     await updateDoc(doc(db, "items", itemId, "claims", claimId), {
-      status:     action,
+      status:     action,   // "approved" | "rejected"
       reviewedAt: serverTimestamp(),
     });
     if (action === "approved") {
       await updateItemStatus(itemId, "claim_approved");
     }
-  } catch (err) {
-    console.error("reviewClaim error:", err);
-    throw err;
+  } catch (e) {
+    console.error("reviewClaim:", e);
+    throw e;
   }
 };
 
-/**
- * Owner confirms item collected → item becomes "resolved".
- */
+/* ─────────────────────────────────────────────────────────────────────────
+   MARK ITEM COLLECTED
+   Called by the OWNER (poster on a "lost" item, or claimer on a "found" item)
+   after physically receiving the item.
+   → claim gets collected:true
+   → item status becomes "resolved"
+   → item disappears from public dashboard
+   → only admin can see it
+───────────────────────────────────────────────────────────────────────── */
 export const markItemCollected = async (itemId, claimId) => {
   try {
     await updateDoc(doc(db, "items", itemId, "claims", claimId), {
@@ -75,16 +89,15 @@ export const markItemCollected = async (itemId, claimId) => {
       collectedAt: serverTimestamp(),
     });
     await updateItemStatus(itemId, "resolved");
-  } catch (err) {
-    console.error("markItemCollected error:", err);
-    throw err;
+  } catch (e) {
+    console.error("markItemCollected:", e);
+    throw e;
   }
 };
 
-/**
- * Admin dashboard: get ALL pending claims across ALL items.
- * Loads every item's claims subcollection and filters client-side.
- */
+/* ─────────────────────────────────────────────────────────────────────────
+   FETCH ALL PENDING CLAIMS  (admin dashboard)
+───────────────────────────────────────────────────────────────────────── */
 export const fetchAllPendingClaims = async () => {
   try {
     const itemsSnap = await getDocs(collection(db, "items"));
@@ -97,25 +110,22 @@ export const fetchAllPendingClaims = async () => {
             collection(db, "items", itemDoc.id, "claims")
           );
           claimsSnap.docs.forEach((c) => {
-            const data = c.data();
-            if (data.status === "pending") {
+            if (c.data().status === "pending") {
               pending.push({
                 id:     c.id,
                 itemId: itemDoc.id,
                 item:   { id: itemDoc.id, ...itemDoc.data() },
-                ...data,
+                ...c.data(),
               });
             }
           });
-        } catch (innerErr) {
-          console.error(`Error fetching claims for item ${itemDoc.id}:`, innerErr);
-        }
+        } catch { /* skip items whose claims can't be read */ }
       })
     );
 
     return pending;
-  } catch (err) {
-    console.error("fetchAllPendingClaims error:", err);
+  } catch (e) {
+    console.error("fetchAllPendingClaims:", e);
     return [];
   }
 };
