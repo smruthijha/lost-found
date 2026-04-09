@@ -8,32 +8,28 @@ import { FilterBar } from "../components/FilterBar";
 export function HomePage() {
   const { items, stats, loadingItems, loadItems, loadStats } = useItems();
 
+  // ✅ Ensure safe default
+  const safeItems = items || [];
+
   const [filter, setFilter] = useState({
     type: "all",
     category: "All",
     search: "",
   });
 
-  /**
-   * ✅ useCallback used properly
-   * Wrap data loading logic
-   */
   const initializeData = useCallback(async () => {
     await loadStats();
     await loadItems();
   }, [loadStats, loadItems]);
 
-  /**
-   * ✅ Clean useEffect (no eslint disable needed)
-   */
   useEffect(() => {
     initializeData();
   }, [initializeData]);
 
   /**
-   * Client-side filtering
+   * ✅ SAFE filtering (no crash)
    */
-  const displayed = items.filter((i) => {
+  const displayed = safeItems.filter((i) => {
     const matchType =
       filter.type === "all" || i.type === filter.type;
 
@@ -49,9 +45,6 @@ export function HomePage() {
     return matchType && matchCategory && matchSearch;
   });
 
-  /**
-   * ✅ useCallback for event handler (optional but clean)
-   */
   const scrollToItems = useCallback((e) => {
     e.preventDefault();
     const el = document.getElementById("items-section");
@@ -65,7 +58,6 @@ export function HomePage() {
 
   return (
     <main className="page">
-
       {/* ── Hero ── */}
       <div
         style={{
