@@ -53,7 +53,7 @@ export function ClaimModal({ item, onSubmit, onClose, loading }) {
 
   // ── Logged in ──────────────────────────────────────────────────────────
   const isFound = item.type === "lost"; // someone is claiming they FOUND a lost item
-  const isOwner = item.type === "found"; // someone is claiming a found item belongs to them
+  //const isOwner = item.type === "found"; // someone is claiming a found item belongs to them
 
   return (
     <div style={overlayStyle} onClick={onClose}>
