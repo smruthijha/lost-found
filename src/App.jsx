@@ -1,4 +1,5 @@
 import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { useEffect } from "react";
 import { AuthProvider }  from "./context/AuthContext";
 import { ItemsProvider } from "./context/ItemsContext";
 import { useToast }      from "./hooks/useToast";
@@ -10,9 +11,16 @@ import { ItemDetailPage } from "./pages/ItemDetailPage";
 import { AuthPage }       from "./pages/AuthPage";
 import { AdminPage }      from "./pages/AdminPage";
 import "./styles/global.css";
+import { patchMissingStatus } from "./firebase/patchItems"; // ← remove after first deploy
 
 function AppShell() {
   const { toast, showToast } = useToast();
+
+  // ✅ One-time patch — adds missing `status: "open"` to old items
+  // Remove this useEffect after your first successful deploy
+  useEffect(() => {
+    patchMissingStatus().catch(console.error);
+  }, []);
   return (
     <>
       <Toast toast={toast} />
