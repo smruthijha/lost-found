@@ -19,17 +19,13 @@ export function ItemsProvider({ children }) {
   const [uploadProgress, setUploadProgress] = useState(0);
 
   const loadItems = useCallback(async (filters = {}) => {
-      setLoadingItems(true);
-      try {
-        const res = await fbFetchItems(filters);
-
-        // ✅ Safe extraction
-        const list = Array.isArray(res?.items) ? res.items : [];
-
-        setItems(list);
-      } finally {
-        setLoadingItems(false);
-      }
+    setLoadingItems(true);
+    try {
+      const { items: list } = await fbFetchItems(filters);
+      setItems(list);
+    } finally {
+      setLoadingItems(false);
+    }
   }, []);
 
   const loadStats = useCallback(async () => {
