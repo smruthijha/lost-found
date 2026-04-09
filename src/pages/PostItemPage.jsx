@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { io } from 'socket.io-client'
 import { useAuth } from "../context/AuthContext";
-import WorkerLayout from '../../components/worker/WorkerLayout'
+import WorkerLayout from '../components/worker/WorkerLayout'
 import { fetchClaims, reviewClaim } from "../firebase/claims";
 import { fetchItem } from "../firebase/items";
 
