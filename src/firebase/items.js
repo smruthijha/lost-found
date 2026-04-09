@@ -6,25 +6,40 @@ import { db } from "./config";
 
 const COL = "items";
 
-/* ── helpers ─────────────────────────────────────────────────────────────── */
-const toMs = (ts) => ts?.seconds ? ts.seconds * 1000 : (ts ?? 0);
-const newestFirst = (a, b) => toMs(b.createdAt) - toMs(a.createdAt);
+const toMs = (ts) => {
+  if (!ts) return 0;
+  if (ts.seconds) return ts.seconds * 1000; // Firestore Timestamp
+  if (typeof ts === "number") return ts;
+  return new Date(ts).getTime() || 0;
+};
 
-/* ── public feed (open + claim_approved only) ────────────────────────────── */
+const newestFirst = (a, b) =>
+  toMs(b.createdAt || b.createdAtMs) - toMs(a.createdAt || a.createdAtMs);
+
+/* ─────────────────────────────────────────────────────────────────────────
+   PUBLIC FEED
+   Shows: open, claim_approved, AND items with no status field (legacy)
+   Hides: only explicitly "resolved" items
+───────────────────────────────────────────────────────────────────────── */
 export const fetchItems = async () => {
   try {
     const snap = await getDocs(collection(db, COL));
-    return snap.docs
-      .map((d) => ({ id: d.id, ...d.data() }))
-      .filter((i) => i.status === "open" || i.status === "claim_approved")
-      .sort(newestFirst);
+    const all  = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+
+    // ✅ Only exclude items explicitly marked as "resolved"
+    // Items with undefined/null/missing status are shown (treated as open)
+    const visible = all.filter((i) => i.status !== "resolved");
+
+    return visible.sort(newestFirst);
   } catch (e) {
-    console.error("fetchItems:", e);
+    console.error("fetchItems error:", e);
     return [];
   }
 };
 
-/* ── admin feed (all statuses) ───────────────────────────────────────────── */
+/* ─────────────────────────────────────────────────────────────────────────
+   ADMIN FEED — all items including resolved
+───────────────────────────────────────────────────────────────────────── */
 export const fetchAllItems = async () => {
   try {
     const snap = await getDocs(collection(db, COL));
@@ -32,37 +47,47 @@ export const fetchAllItems = async () => {
       .map((d) => ({ id: d.id, ...d.data() }))
       .sort(newestFirst);
   } catch (e) {
-    console.error("fetchAllItems:", e);
+    console.error("fetchAllItems error:", e);
     return [];
   }
 };
 
-/* ── single item ─────────────────────────────────────────────────────────── */
+/* ─────────────────────────────────────────────────────────────────────────
+   SINGLE ITEM
+───────────────────────────────────────────────────────────────────────── */
 export const fetchItem = async (id) => {
   const snap = await getDoc(doc(db, COL, id));
   if (!snap.exists()) throw new Error("Item not found.");
   return { id: snap.id, ...snap.data() };
 };
 
-/* ── create ──────────────────────────────────────────────────────────────── */
+/* ─────────────────────────────────────────────────────────────────────────
+   CREATE — always writes status: "open"
+───────────────────────────────────────────────────────────────────────── */
 export const createItem = async (data) => {
   const ref = await addDoc(collection(db, COL), {
     ...data,
-    status: "open",
-    createdAt: serverTimestamp(),
-    createdAtMs: Date.now(),
+    status:      "open",
+    createdAt:    serverTimestamp(),
+    createdAtMs:  Date.now(), // fallback for instant sort before serverTimestamp resolves
   });
   return ref.id;
 };
 
-/* ── delete ──────────────────────────────────────────────────────────────── */
+/* ─────────────────────────────────────────────────────────────────────────
+   DELETE
+───────────────────────────────────────────────────────────────────────── */
 export const deleteItem = async (id) => deleteDoc(doc(db, COL, id));
 
-/* ── update status ───────────────────────────────────────────────────────── */
+/* ─────────────────────────────────────────────────────────────────────────
+   UPDATE STATUS
+───────────────────────────────────────────────────────────────────────── */
 export const updateItemStatus = async (id, status) =>
   updateDoc(doc(db, COL, id), { status, updatedAt: serverTimestamp() });
 
-/* ── stats ───────────────────────────────────────────────────────────────── */
+/* ─────────────────────────────────────────────────────────────────────────
+   STATS
+───────────────────────────────────────────────────────────────────────── */
 export const fetchStats = async () => {
   try {
     const snap = await getDocs(collection(db, COL));
@@ -75,7 +100,7 @@ export const fetchStats = async () => {
       resolved:       all.filter((i) => i.status === "resolved").length,
     };
   } catch (e) {
-    console.error("fetchStats:", e);
+    console.error("fetchStats error:", e);
     return { total: 0, found: 0, lost: 0, claim_approved: 0, resolved: 0 };
   }
 };
