@@ -5,7 +5,7 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="741a5df4-8c5c-4740-8a14-d7929f2e6184" name="Changes" comment="">
-      <change beforePath="$PROJECT_DIR$/src/context/ItemsContext.jsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/context/ItemsContext.jsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/pages/HomePage.jsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/pages/HomePage.jsx" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
