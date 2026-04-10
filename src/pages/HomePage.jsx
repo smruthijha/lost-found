@@ -6,7 +6,7 @@ import { StatsBar }  from "../components/StatsBar";
 import { FilterBar } from "../components/FilterBar";
 
 export function HomePage() {
-  const { items = [], stats = {}, loadingItems, loadItems, loadStats } = useItems();
+  const { items, stats, loadingItems, loadItems, loadStats } = useItems();
   const [filter, setFilter] = useState({ type: "all", category: "All", search: "" });
 
   // ✅ Load once on mount — both are stable useCallback refs with no deps
@@ -16,7 +16,7 @@ export function HomePage() {
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   // All filtering is client-side — type, category, and text search
-  const displayed = (Array.isArray(items) ? items : []).filter((i) => {
+  const displayed = items.filter((i) => {
     const matchType     = filter.type === "all" || i.type === filter.type;
     const matchCategory = filter.category === "All" || i.category === filter.category;
     const matchSearch   = !filter.search.trim() ||
